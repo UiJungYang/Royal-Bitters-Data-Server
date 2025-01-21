@@ -1,3 +1,3 @@
-CREATE DATABASE IF NOT EXISTS alcohol_db;
-GRANT ALL PRIVILEGES ON alcohol_db.* TO 'eddi'@'%';
+CREATE DATABASE IF NOT EXISTS drink_alcohol;
+GRANT ALL PRIVILEGES ON drink_alcohol.* TO 'eddi'@'%';
 FLUSH PRIVILEGES;

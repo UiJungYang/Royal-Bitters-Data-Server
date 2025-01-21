@@ -1,0 +1,83 @@
+name: CD (Continuous Deploy)
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: ghcr.io/uijungyang/backend-deploy-server:latest
+
+jobs:
+  build:
+    name: build-app
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Download wait-for-it.sh
+      run: |
+        curl -o db_mp/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+        chmod +x db_mp/wait-for-it.sh
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.10.5
+
+    - name: Install Dependencies
+      working-directory: ./db_mp
+      run: |
+        if [ -f requirements.txt ]; then
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+        else
+          echo "requirements.txt not found"
+          exit 1
+        fi
+    - name: Grant execute permission for scripts
+      run: |
+        chmod +x db_mp/wait-for-it.sh
+        chmod +x db_mp/manage.py
+    
+    - name: Configure Docker
+      uses: docker/setup-buildx-action@v1
+
+    - name: Setup Docker BuildKit
+      run: |
+        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+
+    - name: Login to GHCR
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: uijungyang
+        password: ${{ secrets.GHCR_TOKEN }}
+
+    - name: Build and Push Docker Image
+      run: |
+        cd db_mp
+        docker buildx build --no-cache --platform linux/arm64 -f Dockerfile -t ${{ env.DOCKER_IMAGE }} --push .
+
+  deploy:
+    needs: build
+    name: Deploy
+    runs-on: [ self-hosted, deploy-backend-server ]
+    steps:
+      - name: Deploy to Production
+        run: |
+          echo "ready for deploy"
+
+          cd /home/ec2-user/drink_alcohol/django/backend
+          docker-compose down
+
+          echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u uijungyang --password-stdin
+          docker pull ${{ env.DOCKER_IMAGE }}
+
+          docker image prune -f
+          docker logout
+
+          docker-compose up -d

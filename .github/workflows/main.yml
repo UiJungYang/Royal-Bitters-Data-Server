@@ -18,8 +18,8 @@ jobs:
 
     - name: Download wait-for-it.sh
       run: |
-        curl -o db_mp/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
-        chmod +x db_mp/wait-for-it.sh
+        curl -o drink_alcohol/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+        chmod +x drink_alcohol/wait-for-it.sh
 
     - name: Setup Python
       uses: actions/setup-python@v2
@@ -27,7 +27,7 @@ jobs:
         python-version: 3.10.5
 
     - name: Install Dependencies
-      working-directory: ./db_mp
+      working-directory: ./drink_alcohol
       run: |
         if [ -f requirements.txt ]; then
           python -m venv .venv
@@ -40,8 +40,8 @@ jobs:
         fi
     - name: Grant execute permission for scripts
       run: |
-        chmod +x db_mp/wait-for-it.sh
-        chmod +x db_mp/manage.py
+        chmod +x drink_alcohol/wait-for-it.sh
+        chmod +x drink_alcohol/manage.py
     
     - name: Configure Docker
       uses: docker/setup-buildx-action@v1
@@ -59,7 +59,7 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        cd db_mp
+        cd drink_alcohol
         docker buildx build --no-cache --platform linux/arm64 -f Dockerfile -t ${{ env.DOCKER_IMAGE }} --push .
 
   deploy:
